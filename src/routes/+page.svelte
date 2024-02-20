@@ -78,12 +78,17 @@
       const markerElement = document.createElement('div');
       markerElement.style.width = '30px';
       markerElement.style.height = '30px';
-      markerElement.style.borderRadius = '50%';
+      markerElement.style.borderRadius = "100px";
       markerElement.style.backgroundColor = color;
   
       return markerElement;
     }
-  
+    
+    function clearMarkers() {
+        markers.forEach(marker => marker.remove());
+        markers = [];
+    }
+
     function filterMarkers(sliderYear) {
       return data.filter(d => new Date(d.date_time).getFullYear() === sliderYear);
     }
@@ -91,6 +96,7 @@
     let filtered_data = [];
     $: {
       if (data.length !== 0) {
+        clearMarkers();
         filtered_data = filterMarkers(year);
         createMarkers(filtered_data);
       }
