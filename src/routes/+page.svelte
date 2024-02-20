@@ -20,7 +20,7 @@
         maxZoom: 15,
       });
   
-      data = await d3.csv('https://raw.githubusercontent.com/patsals/earthquake_visualization/main/data/earthquake_1995-2023.csv');
+      data = await d3.csv('https://raw.githubusercontent.com/patsals/earthquake_visualization_website/main/data/earthquake_1995-2023.csv');
     });
   
     afterUpdate(() => {
