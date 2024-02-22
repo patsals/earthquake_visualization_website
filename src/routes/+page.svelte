@@ -4,14 +4,16 @@
   import mapboxgl from 'mapbox-gl';
   import RangeSlider from "svelte-range-slider-pips";
 
-  let years = [1999,2018];
-  let magns = [7,9];
-  let dpths = [100,600];
+  let years = [2008,2023];
+  let magns = [6,7];
+  let dpths = [0,55];
   let map;
   let data = [];
   let year = 1995;
   let markers = [];
   let popup = new mapboxgl.Popup({ offset: 25 });
+  let eqcount = 0;
+  let total = 0;
 
   onMount(async () => {
     mapboxgl.accessToken = "pk.eyJ1IjoiYXJzMDE4IiwiYSI6ImNsc2s1emhjcTAwMzgyaHF1aWFucWtheHEifQ.PUu2vb6c2ZjdGvHjaQKK_g";
@@ -25,29 +27,26 @@
     });
 
     data = await d3.csv('https://raw.githubusercontent.com/is-patel/eq-vis/main/static/eq_vis.csv');
+    total = data.length;
   });
 
   function createMarkers(filtered_data) {
     markers = filtered_data.map(d => {
       let color;
       let alertLevel;
-      switch (d.alert) {
-        case 'green':
-          color = `rgba(255, 208, 0, 0.7)`; // yellow 
-          alertLevel = 'Yellow';
-          break;
-        case 'yellow':
-          color = `rgba(245, 110, 0, 0.7)`; // orange 
-          alertLevel = 'Orange';
-          break;
-        case 'red':
-          color = `rgba(200, 0, 0, 0.7)`; // red 
-          alertLevel = 'Red';
-          break;
-        default:
-          color = `rgba(255, 255, 255, 0.7)`; // white 
-          alertLevel = 'White';
-          break;
+
+      if (d.sig >= 875){
+        color = `rgba(120,0,0, 0.7)`;
+        alertLevel = 'White';
+      } else if (d.sig >= 744){
+        color = `rgba(220,0,0, 0.7)`;
+        alertLevel = 'White';
+      } else if (d.sig >= 691){
+        color = `rgba(253,140,0, 0.7)`;
+        alertLevel = 'White';
+      } else {
+        color = `rgba(253,197,0, 0.7)`;
+        alertLevel = 'White';
       }
 
       const marker = new mapboxgl.Marker({
@@ -57,11 +56,13 @@
         .addTo(map);
 
       marker.getElement().addEventListener('mouseenter', () => {
-        popup.setHTML(`<p>Location: ${d.location}</p>\
-        <p>Alert Level: ${alertLevel}</p>\
+        popup.setHTML(`
+        <p>Location: ${d.location}</p>\
         <p>Time: ${d.date_time}</p>\
+        <p>Significance: ${d.sig}</p>\
         <p>Magnitude: ${d.magnitude}</p>\
-        <p>Depth: ${d.depth} km</p>`);
+        <p>Depth: ${d.depth} km</p>
+        `);
         marker.setPopup(popup);
         marker.togglePopup();
       });
@@ -73,8 +74,8 @@
   function createCustomMarker(color) {
     // Creating a custom marker with a colored circle
     const markerElement = document.createElement('div');
-    markerElement.style.width = '30px';
-    markerElement.style.height = '30px';
+    markerElement.style.width = '20px';
+    markerElement.style.height = '20px';
     markerElement.style.borderRadius = "100px";
     markerElement.style.backgroundColor = color;
 
@@ -86,12 +87,12 @@
       markers = [];
   }
 
-  function filterMarkers(yrs,mgs,dps) {
-    return data.filter(d => d.year >= yrs[0] && d.year <= yrs[1] &&
+  function filterMarkers(yrs,mgs,dps,sgs) {
+    filtered_data = data.filter(d => d.year >= yrs[0] && d.year <= yrs[1] &&
                             d.magnitude >= mgs[0] && d.magnitude <= mgs[1] &&
-                            d.depth >= dps[0] && d.depth <= dps[1]
-
-    );
+                            d.depth >= dps[0] && d.depth <= dps[1]);
+    eqcount = filtered_data.length;
+    return filtered_data;
   }
 
   let filtered_data = [];
@@ -111,8 +112,8 @@
     <div id="map"></div>
     
     <div class='overlay-title'>
-      <h1>QuakeChronicle: Unveiling Earth's Tremors - A Visual Exploration of Alertness, Coordinates, and Key Insights</h1>
-      <p> question here</p>
+      <h1>QuakeChronicle: Unveiling Earth's Tremors - A Visual Exploration of Signficance, Location, and Other Insights</h1>
+      <p> How does the geographic location of an earthquake impact its characteristics? </p>
     </div>
     
     <div class ="overlay-slider">
@@ -123,13 +124,17 @@
       <RangeSlider float min={6} max={10} bind:values={magns} range={true} step={0.1}/>
       <p style="color: white;">Depth(km): {dpths[0]} - {dpths[1]}</p>
       <RangeSlider float min={0} max={700} bind:values={dpths} range={true} step={1}/>
+      <p style="color: white;">Earthquakes Displayed: {eqcount} ({(eqcount/total*100).toFixed(1)}%)</p>
   </div>
 
     <div class ="overlay-legend">
-      <p><span class="color-box" style="background: white; color: white;"></span> White: Alert Value Unknown</p>
-      <p><span class="color-box" style="background: red;"></span> Red: Severe Activity Alert</p>
-      <p><span class="color-box" style="background: orange;"></span> Orange: High Level Activity Alert</p>
-      <p><span class="color-box" style="background: yellow;"></span> Yellow: Moderate Activity Alert</p>
+      <p style="text-align: center;">Significance Level</p>
+      <p><span class="color-box" style="background: #780000;"></span> &gt;875</p>
+      <p><span class="color-box" style="background: #dc0000;"></span> 875-744</p>
+      <p><span class="color-box" style="background: #fd8c00;"></span> 744-691</p>
+      <p><span class="color-box" style="background: #fdc500;"></span> &lt;691</p>
+      <p style="text-align: center;">min: 650, max: 2910</p>
+      <p style="font-size: 12px;">Determined by a number of factors, including: magnitude, maximum MMI, felt reports, and estimated impact</p>
     </div>
   </div>
 
@@ -180,14 +185,16 @@
   font-family:'Arial', sans-serif;
   font-size: 1.3em;
   color: white; /* Set the inside color to white */
+  width: 40%;
+
 
 }
 .overlay-legend {
   font-size: 0.9em;
 	background-color: rgba(0, 0, 0, 0.6);
   position: absolute;
-  min-width: 250px;
-  width: 15%;
+  min-width: 200px;
+  width: 10%;
   bottom: 20px; /* Change top to bottom */
   left: 20px; /* Change right to left */
   padding: 10px;
